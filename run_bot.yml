@@ -1,0 +1,48 @@
+name: GEO Outreach Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright google-generativeai gspread google-auth 2captcha-python Pillow
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Run bot
+        env:
+          GEMINI_API_KEY:     ${{ secrets.GEMINI_API_KEY }}
+          CAPTCHA_API_KEY:    ${{ secrets.CAPTCHA_API_KEY }}
+          GOOGLE_SHEET_ID:    ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDS_JSON:  ${{ secrets.GOOGLE_CREDS_JSON }}
+        run: python contact_bot.py
+
+      - name: Upload before-submit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-before-submit
+          path: screenshots/before_submit/
+          if-no-files-found: ignore
+
+      - name: Upload after-submit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-after-submit
+          path: screenshots/after_submit/
+          if-no-files-found: ignore
