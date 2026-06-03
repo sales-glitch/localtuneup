@@ -31,14 +31,14 @@ GOOGLE_CREDS_JSON   = os.environ["GOOGLE_CREDS_JSON"]     # Service account JSON
 
 # Gemini setup — free tier model (Flash-Lite: 1500 req/day)
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-2.5-flash-lite")
+gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 
 FIRST_NAME  = "Salman"
 LAST_NAME   = "Khan"
 FULL_NAME   = "Salman Khan"
 COMPANY     = "LocalTuneUp"
 EMAIL       = "salman@localtuneup.com"
-PHONE       = "+918889652586"
+PHONE       = "+918109201842"
 SUBJECT     = "White-Label GBP Management for Your Agency"
 
 MESSAGE = "Hi,\n\nManaging multiple client GBPs can be time-consuming. Are you still handling reviews, posts, citations, and optimization manually?\n\nLocalTuneUp helps SEO & Digital Marketing Agencies offer fully white-label Google Business Profile management for their clients - without hiring extra staff.\n\n- White-label dashboard\n- GBP optimization & automation\n- Review management\n- Citation sync\n- Multi-location support\n\nFree 30-day agency trial - limited onboarding slots available this month.\n\nReply YES and we'll set up your agency account.\n\n- Team LocalTuneUp\nlocaltuneup.com"
