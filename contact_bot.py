@@ -31,7 +31,7 @@ GOOGLE_CREDS_JSON   = os.environ["GOOGLE_CREDS_JSON"]     # Service account JSON
 
 # Gemini setup — free tier model (Flash-Lite: 1500 req/day)
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+gemini_model = genai.GenerativeModel("gemini-3.1-flash-lite")
 
 FIRST_NAME  = "Salman"
 LAST_NAME   = "Khan"
