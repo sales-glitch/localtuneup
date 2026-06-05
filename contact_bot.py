@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 AI-Powered Contact Form Bot
-- Claude Vision API: form analyze karta hai
+- Google Gemini API: form analyze karta hai (Gemini 3.1 Flash Lite)
 - 2captcha: captcha automatically solve karta hai
 - Google Sheets: real-time status update (Dynamic City + Static Niche)
 - GitHub Actions: scheduled cloud run
@@ -14,7 +14,7 @@ import logging
 import sys
 from datetime import datetime
 
-import anthropic
+import google.generativeai as genai
 import gspread
 from google.oauth2.service_account import Credentials
 from playwright.sync_api import sync_playwright
@@ -24,10 +24,13 @@ import twocaptcha
 #  CONFIGURATION - GitHub Secrets se aata hai
 # ------------------------------------------
 
-ANTHROPIC_API_KEY   = os.environ["ANTHROPIC_API_KEY"]
+GEMINI_API_KEY      = os.environ["GEMINI_API_KEY"]
 CAPTCHA_API_KEY     = os.environ["CAPTCHA_API_KEY"]
 GOOGLE_SHEET_ID     = os.environ["GOOGLE_SHEET_ID"]       # Sheet URL se ID
 GOOGLE_CREDS_JSON   = os.environ["GOOGLE_CREDS_JSON"]     # Service account JSON
+
+# Model Definition
+GEMINI_MODEL = "gemini-3.1-flash-lite"
 
 FIRST_NAME  = "Ray"
 LAST_NAME   = "Charles"
@@ -36,7 +39,7 @@ COMPANY     = "Zevahit"
 EMAIL       = "sales@zevahit.com"
 PHONE       = "+17162220972"
 
-# Templates mein Niche (Law Firm) strictly static hai, sirf {city} dynamic hai
+# Legal Niche Templates (Clean Domain Names & Dynamic City)
 SUBJECT_TEMPLATE = "Dominating AI Overviews for Law Practices in {city} (6-Site Bundle)"
 
 MESSAGE_TEMPLATE = "Hi,\n\nQuick question—how is your firm positioning itself for Google AI Overviews and ChatGPT?\n\nWhen potential clients in {city} ask AI engines for the best local legal representation, these systems rely heavily on niche-relevant, high-authority legal blogs to pull their recommendations. \n\nWe are currently putting together an exclusive Legal Authority Bundle across 6 premium law publications:\n- jonathonspire-law.com\n- lawsuitzone.com\n- lawsuittalks.com\n- aslawonline.com\n- lawyershint.com\n- lawyersinventory.com\n\nFor a flat $500, your practice gets featured across all 6 platforms. This isn't just about traditional SEO; it’s about feeding AI models the exact context and trust signals they understand, ensuring your firm gets recommended when high-value cases are searching for help in {city}. A single client driven by this visibility can easily be worth thousands of dollars to your practice.\n\nReply YES if you'd like to secure your firm’s spot before we close the {city} cohort.\n\nWarm Regards,\nRay\nZevahit.com\nClient reviews: https://clutch.co/profile/zevahit#reviews"
@@ -70,7 +73,6 @@ log = logging.getLogger(__name__)
 # ------------------------------------------
 
 def init_sheets():
-    """Google Sheets connection initialize karo aur city column set karo."""
     creds_dict = json.loads(GOOGLE_CREDS_JSON)
     creds = Credentials.from_service_account_info(
         creds_dict,
@@ -82,7 +84,6 @@ def init_sheets():
     gc = gspread.authorize(creds)
     sh = gc.open_by_key(GOOGLE_SHEET_ID)
 
-    # Websites sheet check karo ya banao (7 Columns ke saath)
     try:
         ws = sh.worksheet("websites")
     except gspread.WorksheetNotFound:
@@ -92,26 +93,18 @@ def init_sheets():
     return ws
 
 
-def get_all_rows(ws):
-    """Saari rows fetch karo."""
-    return ws.get_all_records()
-
-
 def update_sheet_row(ws, row_num, status, notes="", fields_filled="", ai_actions=""):
-    """Headers scan karke bina data mix kiye sahi columns update karega."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     excel_row = row_num + 1
     
     headers = ws.row_values(1)
     try:
-        # Dynamic check taaki city column ki wajah se shift na ho data
         status_idx = headers.index("status")
-        start_col = chr(65 + status_idx)  # Column letter automatically find karega (e.g. 'C')
+        start_col = chr(65 + status_idx)
         end_col = chr(65 + status_idx + 4)
         ws.update("{}{}:{}{}".format(start_col, excel_row, end_col, excel_row),
                   [[status, now, notes, fields_filled, ai_actions]])
     except ValueError:
-        # Fallback agar auto match na ho
         ws.update("C{}:G{}".format(excel_row, excel_row),
                   [[status, now, notes, fields_filled, ai_actions]])
         
@@ -119,14 +112,13 @@ def update_sheet_row(ws, row_num, status, notes="", fields_filled="", ai_actions
 
 
 def get_pending_rows(ws):
-    """Poori row data return karega taaki loop mein city access ho sake."""
     rows = ws.get_all_records()
     pending = []
     for i, row in enumerate(rows):
         url     = str(row.get("website", "")).strip()
         status  = str(row.get("status", "")).strip().lower()
         if url and status not in ("submitted",):
-            pending.append((i + 1, row))   # Full row dict pass ho rahi hai
+            pending.append((i + 1, row))
     return pending
 
 # ------------------------------------------
@@ -173,7 +165,6 @@ def dismiss_cookie_banner(page):
 
 def find_contact_page(page, base_url):
     current_url = page.url
-
     try:
         page.wait_for_load_state("networkidle", timeout=6000)
     except Exception:
@@ -236,7 +227,6 @@ def find_contact_page(page, base_url):
 
 def solve_captcha(page, website):
     solver = twocaptcha.TwoCaptcha(CAPTCHA_API_KEY)
-
     try:
         frame = page.locator('iframe[src*="recaptcha"]').first
         if frame.is_visible(timeout=1000):
@@ -309,7 +299,7 @@ def solve_captcha(page, website):
     return False
 
 # ------------------------------------------
-#  AI FORM ANALYSIS (Claude Vision)
+#  AI FORM ANALYSIS (Google Gemini API)
 # ------------------------------------------
 
 def get_page_html(page):
@@ -340,8 +330,8 @@ def get_page_html(page):
     return "\n".join(p for p in parts if p)[:18000]
 
 
-def ask_claude(page, website, subject, message):
-    """Claude ko dynamic elements (subject/message) ke saath call karein."""
+def ask_gemini(page, website, subject, message):
+    """Gemini API se contact form actions array fetch karein (Strict JSON format)."""
     try:
         page.wait_for_load_state("networkidle", timeout=8000)
     except Exception:
@@ -389,11 +379,11 @@ Rules:
 - IMPORTANT: Only fill an ACTUAL CONTACT/ENQUIRY form. Do NOT fill search boxes (input name="s", role="search"), login forms (name="log"/"pwd"/"username"/"password"), or newsletter-only email boxes. If there is no real contact form, return an empty array [].
 - HUMAN-CHECK QUESTIONS: If the form has a simple text question to prove you're human (e.g. "which is bigger, 2 or 8?", "what is 3+4?", "type the word yes", "what color is the sky?"), SOLVE it and fill the answer in that field. Answer with the simplest correct value (e.g. "8", "7", "yes", "blue").
 - For checkboxes (terms/agree/consent/privacy) use "check".
-- REQUIRED checkbox groups (marked with * like "Services", "Interested in", "Budget"): you MUST select at least one option, else the form won't submit. Prefer an SEO / digital-marketing / "Google SEO" / "search" related option if available; otherwise pick the first reasonable option. Use "check" for it.
+- REQUIRED checkbox groups (marked with * like "Services", "Interested in", "Budget"): you MUST select at least one option, else the form won't submit. Prefer an SEO / digital-marketing / "search" related option if available; otherwise pick the first reasonable option. Use "check" for it.
 - For the submit button use "click" - include it LAST. Pick the form's actual submit button (type="submit" inside the contact form), not a search or login button.
-- COMMON FIELDS: fill phone/mobile with the phone, website/url with our site, subject/topic with a short subject like "Partnership enquiry". For dropdowns/select (subject, service, "how did you hear", country), use "select" and pick the most relevant option (e.g. SEO/marketing/general enquiry); if unsure pick the first non-empty option.
+- COMMON FIELDS: fill phone/mobile with the phone, website/url with our site, subject/topic with a short subject. For dropdowns/select (subject, service, country), use "select" and pick the most relevant option.
 - Message field: use the FULL message text provided
-- Return ONLY JSON, no markdown, no explanation""".format(
+- Return ONLY JSON matching the scheme, no conversational text, no markdown backticks.""".format(
         website=website,
         html=page_html,
         full_name=FULL_NAME,
@@ -406,33 +396,38 @@ Rules:
         message=message
     )
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=60.0)
+    # Initialize Gemini API
+    genai.configure(api_key=GEMINI_API_KEY)
+    
     raw = None
     waits = [5, 15, 30, 45]
     for attempt in range(4):
         try:
-            response = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            # JSON format enforce karne ke liye configuration parameter pass kiya hai
+            response = model.generate_content(
+                prompt,
+                generation_config={"response_mime_type": "application/json"}
             )
-            raw = response.content[0].text.strip()
+            raw = response.text.strip()
             break
         except Exception as e:
             msg = str(e)
-            if any(code in msg for code in ("529", "429", "500", "503", "overloaded", "timeout")):
+            if any(code in msg for code in ("429", "500", "503", "overloaded", "timeout")):
                 w = waits[attempt]
-                log.warning("  [AI] API busy ({}), retry in {}s...".format(msg[:40], w))
+                log.warning("  [AI] Gemini API busy ({}), retry in {}s...".format(msg[:40], w))
                 time.sleep(w)
                 continue
             raise
+            
     if raw is None:
-        raise Exception("Claude API failed after 4 retries")
+        raise Exception("Gemini API failed after 4 retries")
 
     if "```" in raw:
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
+            
     return json.loads(raw.strip())
 
 # ------------------------------------------
@@ -596,10 +591,9 @@ def main():
             website_raw = row_data.get("website", "")
             website = normalise_url(website_raw)
             
-            # Sheet se unique row ki city read karega, khali hone par fallback lagayega
             city = str(row_data.get("city", "Somers Point")).strip() or "Somers Point"
             
-            # Dynamic text allocation
+            # Dynamic strings assignment
             current_subject = SUBJECT_TEMPLATE.format(city=city)
             current_message = MESSAGE_TEMPLATE.format(city=city)
 
@@ -634,9 +628,9 @@ def main():
 
                 solve_captcha(pg, website)
 
-                # Claude processes dynamic templates
+                # Gemini processes form
                 try:
-                    actions = ask_claude(pg, website, current_subject, current_message)
+                    actions = ask_gemini(pg, website, current_subject, current_message)
                     log.info("  [AI] {} actions".format(len(actions)))
                 except Exception as e:
                     log.error("  [AI] Error: {}".format(e))
