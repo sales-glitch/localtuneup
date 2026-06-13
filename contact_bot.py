@@ -43,7 +43,7 @@ PHONE       = "+918889652586"
 # Fixed message - Indian SEO/digital agencies ko white-label GBP offer (short)
 SUBJECT_TEMPLATE = "White-label Google Business Profile management for your agency"
 
-MESSAGE_TEMPLATE = "Hi,\n\nManaging multiple client GBPs manually eats up your team's time every week.\n\nLocalTuneUp is an AI-powered tool that lets SEO & digital marketing agencies offer fully white-label GBP management to clients - reviews, posts, citations, optimization, multi-location - billed as your own service. We run it behind the scenes.\n\nProfessional reporting format with geo-grid scan, keyword tracking, and automatic report sending to your clients.\n\nPricing: just ₹500 per location/month (minimum 5 locations).\n\nFree 14-day agency trial. Reply YES and we'll set up your account.\n\n- Team LocalTuneUp\nlocaltuneup.com"
+MESSAGE_TEMPLATE = "Hi,\n\nManaging multiple client GBPs manually eats up your team's time every week.\n\nLocalTuneUp is an AI-powered tool that lets SEO & digital marketing agencies offer fully white-label GBP management to clients - reviews, posts, citations, optimization, multi-location - billed as your own service. We run it behind the scenes.\n\nProfessional reporting format with geo-grid scan, keyword tracking, and automatic report sending to your clients.\n\nPricing: just AED 50 per location/month (minimum 5 locations).\n\nFree 14-day agency trial. Reply YES and we'll set up your account.\n\n- Team LocalTuneUp\nlocaltuneup.com"
 PROCESS_LIMIT = None  # None = sab sites ek hi run mein
 
 CONTACT_KEYWORDS = ["contact", "contact-us", "contactus", "contact-form", "get-in-touch",
