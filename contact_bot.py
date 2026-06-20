@@ -40,10 +40,10 @@ COMPANY     = "LocalTuneUp"
 EMAIL       = "salman@localtuneup.com"
 PHONE       = "+918889652586"
 
-# Fixed message - Indian SEO/digital agencies ko white-label GBP offer (short)
-SUBJECT_TEMPLATE = "White-label Google Business Profile management for your agency"
+# Fixed message - Web designers ko recurring revenue add-on angle
+SUBJECT_TEMPLATE = "Add a recurring revenue stream to your web design business"
 
-MESSAGE_TEMPLATE = "Hi,\n\nManaging multiple client GBPs manually eats up your team's time every week.\n\nLocalTuneUp is an AI-powered tool that lets SEO & digital marketing agencies offer fully white-label GBP management to clients - reviews, posts, citations, optimization, multi-location - billed as your own service. We run it behind the scenes.\n\nProfessional reporting format with geo-grid scan, keyword tracking, and automatic report sending to your clients.\n\nPricing: just AED 50 per location/month (minimum 5 locations).\n\nFree 14-day agency trial. Reply YES and we'll set up your account.\n\n- Team LocalTuneUp\nlocaltuneup.com"
+MESSAGE_TEMPLATE = "Hi,\n\nYou build great websites for clients - but most web design work is one-time. After the site goes live, the recurring income stops.\n\nLocalTuneUp lets you add a white-label Google Business Profile management service for the local clients you've already built sites for - reviews, posts, citations, optimization, multi-location - all billed as your own service. We handle delivery behind the scenes, you keep the client relationship and the recurring revenue.\n\nProfessional reporting with geo-grid scan, keyword tracking, and automatic report sending to your clients - all under your brand.\n\nPricing: just GBP 30 per location/month. You set your own client price.\n\nFree 14-day agency trial. Reply YES and we'll set up your account.\n\n- Team LocalTuneUp\nlocaltuneup.com"
 PROCESS_LIMIT = None  # None = sab sites ek hi run mein
 
 CONTACT_KEYWORDS = ["contact", "contact-us", "contactus", "contact-form", "get-in-touch",
